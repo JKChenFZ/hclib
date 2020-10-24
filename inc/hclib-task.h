@@ -41,6 +41,7 @@ typedef struct hclib_task_t {
     hclib_locale_t *locale;
     int non_blocking;
     struct hclib_task_t *next_waiter;
+    void* task_local;
 } hclib_task_t;
 
 /** @struct loop_domain_t
@@ -104,6 +105,10 @@ typedef struct _forasync_3D_task_t {
     hclib_task_t forasync_task;
     forasync3D_t def;
 } forasync3D_task_t;
+
+void hclib_get_curr_task_local() {
+    return &(((hclib_task_t *)(CURRENT_WS_INTERNAL->curr_task))->task_local);
+}
 
 static inline struct finish_t* get_current_finish(hclib_task_t *t) {
     return t->current_finish;
