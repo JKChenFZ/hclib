@@ -106,10 +106,6 @@ typedef struct _forasync_3D_task_t {
     forasync3D_t def;
 } forasync3D_task_t;
 
-void** hclib_get_curr_task_local() {
-    return &(((hclib_task_t *)(CURRENT_WS_INTERNAL->curr_task))->task_local);
-}
-
 static inline struct finish_t* get_current_finish(hclib_task_t *t) {
     return t->current_finish;
 }
