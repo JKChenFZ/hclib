@@ -14,7 +14,7 @@ namespace {
 // most likely due to deallocation
 #define inlineUserVoidLambdaSetUp(userLambda, newTaskNode)          \
 [userLambda, newTaskNode]() {                                       \
-    setUpAsyncTaskNode(newTaskNode);                                \
+    setUpTaskNode(newTaskNode);                                     \
     TJPromiseFulfillmentScopeGuard scopeGuard(newTaskNode);         \
                                                                     \
     userLambda();                                                   \
@@ -24,7 +24,7 @@ namespace {
 // most likely due to deallocation
 #define inlineUserLambdaSetUp(userLambda, newTaskNode)              \
 [userLambda, newTaskNode]() {                                       \
-    setUpAsyncTaskNode(newTaskNode);                                \
+    setUpTaskNode(newTaskNode);                                     \
     TJPromiseFulfillmentScopeGuard scopeGuard(newTaskNode);         \
                                                                     \
     return userLambda();                                            \
@@ -34,7 +34,7 @@ namespace {
 
 template <typename T>
 void async(T&& lambda) {
-    AsyncTaskNode* newTaskNode = generateNewTaskNode();
+    TaskNode* newTaskNode = generateNewTaskNode();
 
     hclib::async(
         inlineUserVoidLambdaSetUp(lambda, newTaskNode)
@@ -46,7 +46,7 @@ void async_await(
     T&& lambda,
     TJFuture<U>* tjFuture
 ) {
-    AsyncTaskNode* newTaskNode = generateNewTaskNode();
+    TaskNode* newTaskNode = generateNewTaskNode();
     // No-op if ENABLE_FUTURE_LCA is not set
     verifyFutureAwaitWithLCA(newTaskNode, tjFuture);
 
@@ -58,7 +58,7 @@ void async_await(
 
 template <typename T>
 auto async_future(T&& lambda) -> TJFuture<decltype(lambda())>* {
-    AsyncTaskNode* newTaskNode = generateNewTaskNode();
+    TaskNode* newTaskNode = generateNewTaskNode();
 
     hclib::future_t<decltype(lambda())>* hclibFuture = hclib::async_future(
         inlineUserLambdaSetUp(lambda, newTaskNode)
@@ -77,7 +77,7 @@ auto async_future_await(
     T&& lambda,
     TJFuture<U>* tjFuture
 ) -> TJFuture<decltype(lambda())>* {
-    AsyncTaskNode* newTaskNode = generateNewTaskNode();
+    TaskNode* newTaskNode = generateNewTaskNode();
     // No-op if ENABLE_FUTURE_LCA is not set
     verifyFutureAwaitWithLCA(newTaskNode, tjFuture);
 
@@ -96,14 +96,14 @@ auto async_future_await(
 // APIs extended to accomendate transfer in promise ownership
 template <typename T, typename U>
 void async(TJPromise<T>* promiseToTransfer, U&& lambda) {
-    AsyncTaskNode* newTaskNode = generateNewTaskNode();
+    TaskNode* newTaskNode = generateNewTaskNode();
 
     // Change in ownership logic
     transferPromiseOwnership(promiseToTransfer, newTaskNode);
 
     hclib::async(
         [promiseToTransfer, newTaskNode, lambda]() {
-            setUpAsyncTaskNode(newTaskNode);
+            setUpTaskNode(newTaskNode);
             TJPromiseFulfillmentScopeGuard scopeGuard(newTaskNode);
 
             lambda();
@@ -113,14 +113,14 @@ void async(TJPromise<T>* promiseToTransfer, U&& lambda) {
 
 template <typename T, typename U>
 auto async_future(TJPromise<T>* promiseToTransfer, U&& lambda) -> TJFuture<decltype(lambda())>* {
-    AsyncTaskNode* newTaskNode = generateNewTaskNode();
+    TaskNode* newTaskNode = generateNewTaskNode();
 
     // Change in ownership logic
     transferPromiseOwnership(promiseToTransfer, newTaskNode);
 
     hclib::future_t<decltype(lambda())>* hclibFuture = hclib::async_future(
         [promiseToTransfer, newTaskNode, lambda]() {
-            setUpAsyncTaskNode(newTaskNode);
+            setUpTaskNode(newTaskNode);
             TJPromiseFulfillmentScopeGuard scopeGuard(newTaskNode);
 
             return lambda();
