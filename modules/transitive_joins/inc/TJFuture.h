@@ -8,10 +8,10 @@
 namespace hclib {
 namespace transitivejoins {
 
-struct TJFutureBase;
-// Forward declaration of helper function in verification API
+// Forward declarations
 struct TaskNode;
-void verifyFutureWaitFor(TJFutureBase* dependencyFuture);
+struct TJFutureBase;
+void verifyFutureAwaitFor(TJFutureBase* dependencyFuture);
 
 //////////////////////////////////////////////////////////////////////////////
 // TJFuture Declarations
@@ -38,8 +38,7 @@ struct TJFuture : TJFutureBase {
     ) : TJFutureBase(ownerTaskNode), hclibFuture_(hclibFuture) {}
 
     T wait() {
-        // No-op if ENABLE_FUTURE_LCA is not set
-        verifyFutureWaitFor(this);
+        verifyFutureAwaitFor(this);
 
         return hclibFuture_->wait();
     }

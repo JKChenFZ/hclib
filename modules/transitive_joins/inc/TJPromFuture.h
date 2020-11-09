@@ -5,33 +5,23 @@
 namespace hclib {
 namespace transitivejoins {
 
-template<typename U>
-struct TJPromise;
-
+// Forward declaration
 struct TJPromiseBase;
-// Forward declaration of helper function in Verification API
 void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise);
 
-//////////////////////////////////////////////////////////////////////////////
-// TJPromFuture Declarations
-// For futures constructed from TJPromise only
-//////////////////////////////////////////////////////////////////////////////
-
-// Specialized for general types
+/*
+ * Wrapper of future_t, a part of TJPromise
+ */
 template<typename T>
 struct TJPromFuture {
     T wait() {
-        // No-op if ENABLE_Promise_LCA is not set
+#ifdef ENABLE_PROMISE_LCA
         verifyPromiseWaitFor(parentTJPromise_);
-
+#endif
         return hclibFuture_->wait();
     }
 
-    template<typename U>
-    friend struct TJPromise;
-
-private:
-    TJPromise<T>* parentTJPromise_;
+    TJPromiseBase* parentTJPromise_;
     hclib::future_t<T>* hclibFuture_;
 };
 

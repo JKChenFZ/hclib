@@ -7,47 +7,42 @@
 
 namespace hclib {
 namespace transitivejoins {
-//////////////////////////////////////////////////////////////////////////////
-// Runtime API Declarations
-//////////////////////////////////////////////////////////////////////////////
-TaskNode* getCurrentTaskNode();
+/*
+ * Execute LCA algorithm to verify a wait-for relationship between
+ * current executing TaskNode and the TaskNode associated with
+ * the parameter "dependencyPromise"
+ */
+void verifyPromiseAwaitFor(TJPromiseBase* dependencyPromise);
 
-// Invoke from Future
-void verifyFutureWaitFor(TJFutureBase* dependencyFuture);
+/*
+ * Execute LCA algorithm to verify a wait-for relationship between
+ * current executing TaskNode and the TaskNode associated with
+ * the parameter "dependencyFuture"
+ */
+void verifyFutureAwaitFor(TJFutureBase* dependencyFuture);
 
-// Invoke from Future as well
-void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise);
-
-// Invoke from Promise on fulfillment
-void promiseLCASignalDependencyEdges(TJPromiseBase* promise);
-
-// Invoke from Async APIs
+/*
+ * Execute LCA algorithm to verify a wait-for relationship between
+ * current executing TaskNode and the TaskNode associated with
+ * the parameter "dependencyFuture"
+ * 
+ * Invoked through implicit wait-for using async_await
+ */
 void verifyFutureAwaitWithLCA(TaskNode* currTaskNode, TJFutureBase* dependencyFuture);
 
-void setUpTaskNode(TaskNode* currTaskNode);
-
-TaskNode* generateNewTaskNode();
-
-template<class T>
-auto getNewTJPromise() {
-    auto newPromise = new TJPromise<T>();
-    newPromise->setNewOwner(getCurrentTaskNode());
-
-    // insert the new promise into the owner TaskNode
-    getCurrentTaskNode()->addNewTJPromise(newPromise);
-
-    return newPromise;
-}
-
+/*
+ * Transfers the ownership ("ownerTaskNode") from current node to the given
+ * "newTaskNode"
+ */
 template <typename T>
 void transferPromiseOwnership(TJPromise<T>* promiseToTransfer, TaskNode* newTaskNode) {
-    // In the case of not generating nodes, we don't perform transfer
-    if (!newTaskNode) {
+    auto currentNode = getCurrentTaskNode();
+    if (!newTaskNode || !currentNode) {
         return;
     }
 
-    if (promiseToTransfer->getOwnerTaskNode() != getCurrentTaskNode()) {
-        throw std::runtime_error("A promise can not be transferred twice!");
+    if (promiseToTransfer->getOwnerTaskNode() != currentNode) {
+        throw std::runtime_error("Current node does not own this promise");
     }
 
     promiseToTransfer->getOwnerTaskNode()->removeTJPromise(promiseToTransfer);
@@ -55,9 +50,14 @@ void transferPromiseOwnership(TJPromise<T>* promiseToTransfer, TaskNode* newTask
     newTaskNode->addNewTJPromise(promiseToTransfer);
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// TJPromise Fulfillment Scope Guard Declarations
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * A scope guard to check whether owned promises of each task
+ * are fullfilled at the end of the task execution
+ * 
+ * Bookkeeping and verification are enabled only if
+ * 'ENABLE_PROMISE_FULFILLMENT_CHECK' flag is enabled in compilation
+ * of transitive joins
+ */
 struct TJPromiseFulfillmentScopeGuard {
     TJPromiseFulfillmentScopeGuard(TaskNode* currentScopeTaskNode);
     ~TJPromiseFulfillmentScopeGuard() noexcept(false);

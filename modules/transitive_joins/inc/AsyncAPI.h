@@ -1,14 +1,23 @@
 #pragma once
 
+#include "TaskNode.h"
 #include "TJFuture.h"
+#include "TJPromise.h"
 #include "VerificationAPI.h"
 
 #include "hclib_cpp.h"
 
 namespace hclib {
 namespace transitivejoins {
-
 namespace {
+
+TaskNode* generateNewTaskNode() {
+#ifdef ENABLE_TASK_TREE
+    return new TaskNode(getCurrentTaskNode());
+#else
+    return nullptr;
+#endif
+}
 
 // Capturing the lambda by reference can cause partial corruption in captured list
 // most likely due to deallocation
@@ -42,12 +51,8 @@ void async(T&& lambda) {
 }
 
 template <typename T, typename U>
-void async_await(
-    T&& lambda,
-    TJFuture<U>* tjFuture
-) {
+void async_await(T&& lambda, TJFuture<U>* tjFuture) {
     TaskNode* newTaskNode = generateNewTaskNode();
-    // No-op if ENABLE_FUTURE_LCA is not set
     verifyFutureAwaitWithLCA(newTaskNode, tjFuture);
 
     hclib::async_await(
@@ -78,9 +83,9 @@ auto async_future_await(
     TJFuture<U>* tjFuture
 ) -> TJFuture<decltype(lambda())>* {
     TaskNode* newTaskNode = generateNewTaskNode();
-    // No-op if ENABLE_FUTURE_LCA is not set
+#ifdef ENABLE_FUTURE_LCA
     verifyFutureAwaitWithLCA(newTaskNode, tjFuture);
-
+#endif
     auto hclibFuture = hclib::async_future_await(
         inlineUserLambdaSetUp(lambda, newTaskNode),
         tjFuture->getHclibFuture()
@@ -90,6 +95,7 @@ auto async_future_await(
         hclibFuture,
         newTaskNode
     );
+
     return newTJFuture;
 }
 

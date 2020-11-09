@@ -270,35 +270,7 @@ void verifyPromiseWaitForImp(TaskNode* initiatorNode, TJPromiseBase* dependencyP
 //////////////////////////////////////////////////////////////////////////////
 // Runtime API Implementation
 //////////////////////////////////////////////////////////////////////////////
-TaskNode* getCurrentTaskNode() {
-    void** currTaskLocalPtr = hclib_get_curr_task_local();
-
-    if (!((TaskNode*)(*currTaskLocalPtr))) {
-        // Create node for root task "hclib::launch/finish"
-#ifdef LOG
-        std::cout << "[Runtime API] TaskNode Created for root task" << std::endl;
-#endif
-        *currTaskLocalPtr = new TaskNode();
-    }
-
-    return (TaskNode*)(*currTaskLocalPtr);
-}
-
-void setUpTaskNode(TaskNode* currTaskNode) {
-#ifdef ENABLE_TASK_TREE
-    *(hclib_get_curr_task_local()) = currTaskNode;
-#endif
-}
-
-TaskNode* generateNewTaskNode() {
-#ifdef ENABLE_TASK_TREE
-    return new TaskNode(getCurrentTaskNode());
-#else
-    return nullptr;
-#endif
-}
-
-void verifyFutureWaitFor(TJFutureBase* dependencyFuture) {
+void verifyFutureAwaitFor(TJFutureBase* dependencyFuture) {
 #ifdef ENABLE_FUTURE_LCA
     if (dependencyFuture->fulfilled()) {
         return;
@@ -306,18 +278,15 @@ void verifyFutureWaitFor(TJFutureBase* dependencyFuture) {
     TaskNode* initiatorNode = getCurrentTaskNode();
     bool res = verifyFutureWaitForImp(initiatorNode, dependencyFuture);
     if (!res) throw std::runtime_error("LCA Verification failed, see log");
-#endif
+#endif // ENABLE_FUTURE_LCA
 }
 
 void verifyFutureAwaitWithLCA(TaskNode* currTaskNode, TJFutureBase* dependencyFuture) {
-#ifdef ENABLE_FUTURE_LCA
     bool res = verifyFutureWaitForImp(currTaskNode, dependencyFuture);
     if (!res) throw std::runtime_error("LCA Verification failed, see log");
-#endif
 }
 
 void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise) {
-#ifdef ENABLE_PROMISE_LCA
     if (dependencyPromise->isFulfilled()) {
         // If a promise is fulfilled already, it is safe from LCA inspection
         return;
@@ -325,13 +294,6 @@ void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise) {
 
     TaskNode* initiatorNode = getCurrentTaskNode();
     verifyPromiseWaitForImp(initiatorNode, dependencyPromise);
-#endif
-}
-
-void promiseLCASignalDependencyEdges(TJPromiseBase* promise) {
-#ifdef ENABLE_PROMISE_LCA
-    promise->signalAllDependencyNodes();
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -347,7 +309,7 @@ TJPromiseFulfillmentScopeGuard::~TJPromiseFulfillmentScopeGuard() noexcept(false
     std::cout << currentScopeTaskNode_->getNodeID() << std::endl;
 #endif // LOG
 
-    for (auto* promise : getCurrentTaskNode()->ownedPromises_SET) {
+    for (auto* promise : getCurrentTaskNode()->ownedPromises) {
         if (!promise->isFulfilled()) {
 #ifdef LOG
             std::cout << "[Runtime API] A TJPromise is not fulfilled in node ";

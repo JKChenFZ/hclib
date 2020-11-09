@@ -12,9 +12,9 @@ namespace transitivejoins {
 class TJPromiseBase;
 struct TJPromiseFulfillmentScopeGuard;
 
-//////////////////////////////////////////////////////////////////////////////
-// TaskNode Class Declarations
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * Representation of a Task during the runtime
+ */
 struct TaskNode {
 public:
     TaskNode();
@@ -38,36 +38,42 @@ public:
     // < 0: waited by lesser nodes
     std::atomic<int32_t> edgeCount{0};
 
-#ifdef LOG
+    // Returns "0" if LOG flag is not enabled
     uint32_t getNodeID();
-#endif
 
 private:
     TaskNode* parentTaskNode_ = nullptr;
+
     // The nth spawned task from parent task node
     uint32_t siblingOrder_ = 0;
 
-    // Number of children, also used to generate
+    // Number of children, also used to generate the sibling order of new children
     std::atomic_uint32_t numChildren_{0};
 
-    // depth of this node
+    // Depth of this node in the task tree
     uint32_t depth_ = 0;
 
     // Stores all owned promises in a set
     std::unordered_set<TJPromiseBase*> ownedPromises;
 
-    // A scope guard struct to perform the actual TJPrmise Fulfillment
+    // A scope guard used to perform owned promises Fulfillment check
     friend struct TJPromiseFulfillmentScopeGuard;
 
-#ifdef LOG
     // Unique Node ID for debugging
     uint32_t nodeID_ = 0;
-
-    // Keep track of worker thread
-    uint32_t workerThreadID_ = 0;
-#endif
-
 };
+
+/*
+ * Retrieve the current task node with respect to the
+ * executing task. Creates a new one if one not found
+ */
+TaskNode* getCurrentTaskNode();
+
+/*
+ * Sets the associated TaskNode of the current task
+ * to the given parameter (can be nullptr)
+ */
+void setUpTaskNode(TaskNode* currTaskNode);
 
 } // namespace transitivejoins
 } // namespace hclib

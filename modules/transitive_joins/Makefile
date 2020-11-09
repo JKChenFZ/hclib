@@ -8,7 +8,7 @@ FLAGS=-std=c++14 -Wall -fPIC -Iinc
 SRC_OBJ:=$(patsubst $(SOURCE_FOLDER)/%.cpp, %.o, $(wildcard $(SOURCE_FOLDER)/*.cpp))
 TARGETS=$(SRC_OBJ) lib/libhclib_transitive_joins.so
 
-all: FLAGS += -O3 -DENABLE_TASK_TREE -DENABLE_FUTURE_LCA -DENABLE_PROMISE_LCA
+all: FLAGS += -O3
 all: $(TARGETS)
 
 lib/libhclib_transitive_joins.so: $(SRC_OBJ)

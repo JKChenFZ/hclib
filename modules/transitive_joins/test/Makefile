@@ -4,10 +4,12 @@ include $(HCLIB_ROOT)/../modules/transitive_joins/inc/hclib_transitive_joins.pos
 
 TARGETS=TestExampleProgram
 
+FLAGS=-DENABLE_TASK_TREE -DENABLE_FUTURE_LCA -DENABLE_PROMISE_LCA
+
 all: $(TARGETS)
 
 %: %.cpp
-	$(CXX) -g -O3 -std=c++14 $(HCLIB_CFLAGS) $(HCLIB_LDFLAGS) -o $@.out $^ $(HCLIB_LDLIBS) -lhclib_transitive_joins
+	$(CXX) -g -O3 -std=c++14 $(FLAGS) $(HCLIB_CFLAGS) $(HCLIB_LDFLAGS) -o $@.out $^ $(HCLIB_LDLIBS) -lhclib_transitive_joins
 
 clean:
 	rm -f *.out

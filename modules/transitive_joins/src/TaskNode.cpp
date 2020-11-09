@@ -62,11 +62,13 @@ uint32_t TaskNode::getSiblingOrderForNewChild() {
     return ++numChildren_;
 }
 
-#ifdef LOG
 uint32_t TaskNode::getNodeID() {
+#ifdef LOG
     return nodeID_;
-}
+#else
+    return 0;
 #endif
+}
 
 void TaskNode::removeTJPromise(TJPromiseBase* promiseToRemove) {
 #ifdef ENABLE_PROMISE_FULFILLMENT_CHECK
@@ -78,6 +80,30 @@ void TaskNode::addNewTJPromise(TJPromiseBase* newPromise) {
 #ifdef ENABLE_PROMISE_FULFILLMENT_CHECK
     ownedPromises.insert(newPromise);
 #endif // ENABLE_PROMISE_FULFILLMENT_CHECK
+}
+
+TaskNode* getCurrentTaskNode() {
+#ifdef ENABLE_TASK_TREE
+    void** currTaskLocalPtr = hclib_get_curr_task_local();
+
+    if (!((TaskNode*)(*currTaskLocalPtr))) {
+        // Create node for root task "hclib::launch/finish"
+#ifdef LOG
+        std::cout << "[Runtime API] TaskNode Created for root task" << std::endl;
+#endif
+        *currTaskLocalPtr = new TaskNode();
+    }
+
+    return (TaskNode*)(*currTaskLocalPtr);
+#else
+    return nullptr;
+#endif // ENABLE_TASK_TREE
+}
+
+void setUpTaskNode(TaskNode* currTaskNode) {
+#ifdef ENABLE_TASK_TREE
+    *(hclib_get_curr_task_local()) = currTaskNode;
+#endif // ENABLE_TASK_TREE
 }
 
 } // namespace transitivejoins
