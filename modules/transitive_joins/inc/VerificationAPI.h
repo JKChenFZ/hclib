@@ -3,7 +3,6 @@
 #include "TaskNode.h"
 #include "TJFuture.h"
 #include "TJPromise.h"
-#include "TJPromFuture.h"
 
 namespace hclib {
 namespace transitivejoins {
@@ -12,14 +11,14 @@ namespace transitivejoins {
  * current executing TaskNode and the TaskNode associated with
  * the parameter "dependencyPromise"
  */
-void verifyPromiseAwaitFor(TJPromiseBase* dependencyPromise);
+void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise);
 
 /*
  * Execute LCA algorithm to verify a wait-for relationship between
  * current executing TaskNode and the TaskNode associated with
  * the parameter "dependencyFuture"
  */
-void verifyFutureAwaitFor(TJFutureBase* dependencyFuture);
+void verifyFutureWaitFor(TJFutureBase* dependencyFuture);
 
 /*
  * Execute LCA algorithm to verify a wait-for relationship between
@@ -42,7 +41,7 @@ void transferPromiseOwnership(TJPromise<T>* promiseToTransfer, TaskNode* newTask
     }
 
     if (promiseToTransfer->getOwnerTaskNode() != currentNode) {
-        throw std::runtime_error("Current node does not own this promise");
+        throw std::runtime_error("Current TaskNode does not own this promise");
     }
 
     promiseToTransfer->getOwnerTaskNode()->removeTJPromise(promiseToTransfer);

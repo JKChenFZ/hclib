@@ -5,27 +5,42 @@
 #include <vector>
 
 #include "TaskNode.h"
-#include "TJPromFuture.h"
 
 #include "hclib_cpp.h"
 
 namespace hclib {
 namespace transitivejoins {
+// Forward declaration
+template<typename T>
+struct TJPromise;
+struct TJPromiseBase;
+void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise);
 
-template <typename T>
-auto getNewTJPromise();
+template<typename T>
+auto getNewTJPromise() -> TJPromise<T>* {
+    auto currentTaskNode = getCurrentTaskNode();
+    auto newPromise = new TJPromise<T>(currentTaskNode);
+
+    if (currentTaskNode) {
+        // insert the new promise into the owner TaskNode
+        currentTaskNode->addNewTJPromise(newPromise);
+    }
+
+    return newPromise;
+}
 
 /*
  * Common base interface of TJPromise
  */
 struct TJPromiseBase {
-    virtual bool isFulfilled() = 0;
+    TJPromiseBase() = delete;
+    TJPromiseBase(TaskNode* ownerTaskNode) : ownerTaskNode_(ownerTaskNode) {}
 
-    void setNewOwner(TaskNode* newOwnerNode);
     TaskNode* getOwnerTaskNode();
-
     void addDependencyNode(TaskNode* newDependencyNode);
     void signalAllDependencyNodes();
+
+    virtual bool isFulfilled() = 0;
 
 protected:
     std::atomic<TaskNode*> ownerTaskNode_;
@@ -33,59 +48,53 @@ protected:
     // after "put" is called
     std::mutex dependencyNodesLock;
     std::vector<TaskNode*> dependencyNodes;
-
-    TJPromiseBase() {}
 };
 
 // Specialized for general types
 template<typename T>
 struct TJPromise : public promise_t<T>, public TJPromiseBase {
+    TJPromise() = delete;
+    TJPromise(TaskNode* ownerTaskNode) : TJPromiseBase(ownerTaskNode) {}
+
     void put(T datum) {
-        signalAllDependencyNodes();
         promise_t<T>::put(datum);
+        signalAllDependencyNodes();
     }
 
     bool isFulfilled() override {
         return this->satisfied;
     }
 
-    friend auto getNewTJPromise<T>();
+    T wait() {
+        verifyPromiseWaitFor(this);
+        return promise_t<T>::get_future()->wait();
+    }
 
-private:
-    TJPromise() {}
+    friend auto getNewTJPromise<T>() -> TJPromise<T>*;
 };
 
 // Specialized for void
 template<>
 struct TJPromise<void> : public promise_t<void>, public TJPromiseBase {
+    TJPromise() = delete;
+    TJPromise(TaskNode* ownerTaskNode) : TJPromiseBase(ownerTaskNode) {}
+
     void put() {
-        signalAllDependencyNodes();
         promise_t<void>::put();
+        signalAllDependencyNodes();
     }
 
     bool isFulfilled() override {
         return this->satisfied;
     }
 
-    friend auto getNewTJPromise<void>();
-
-private:
-    TJPromise() {}
-};
-
-template<class T>
-auto getNewTJPromise() -> TJPromise<T> {
-    auto newPromise = new TJPromise<T>();
-    auto currentTaskNode = getCurrentTaskNode();
-    newPromise->setNewOwner(currentTaskNode);
-
-    if (currentTaskNode) {
-        // insert the new promise into the owner TaskNode
-        getCurrentTaskNode()->addNewTJPromise(newPromise);
+    void wait() {
+        verifyPromiseWaitFor(this);
+        promise_t<void>::get_future()->wait();
     }
 
-    return newPromise;
-}
+    friend auto getNewTJPromise<void>() -> TJPromise<void>*;
+};
 
 } // namespace transitivejoin
 } // namespace hclib

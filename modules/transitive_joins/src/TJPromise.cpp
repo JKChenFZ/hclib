@@ -3,20 +3,19 @@
 namespace hclib {
 namespace transitivejoins {
 
-void TJPromiseBase::setNewOwner(TaskNode* newOwnerNode) {
-    ownerTaskNode_ = newOwnerNode;
-}
-
 TaskNode* TJPromiseBase::getOwnerTaskNode() {
     return ownerTaskNode_; 
 }
 
 void TJPromiseBase::addDependencyNode(TaskNode* newDependencyNode) {
+#ifdef ENABLE_PROMISE_LCA
     std::lock_guard<std::mutex> lock(dependencyNodesLock);
     dependencyNodes.push_back(newDependencyNode);
+#endif // ENABLE_PROMISE_LCA
 }
 
 void TJPromiseBase::signalAllDependencyNodes() {
+#ifdef ENABLE_PROMISE_LCA
     std::lock_guard<std::mutex> lock(dependencyNodesLock);
     for (auto nodePtr : dependencyNodes) {
         if (ownerTaskNode_ == nodePtr) {
@@ -28,6 +27,7 @@ void TJPromiseBase::signalAllDependencyNodes() {
         }
     }
     dependencyNodes.clear();
+#endif // ENABLE_PROMISE_LCA
 }
 
 } // namespace transitivejoins

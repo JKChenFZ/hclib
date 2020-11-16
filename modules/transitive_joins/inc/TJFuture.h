@@ -1,58 +1,66 @@
 #pragma once
 
-#include <iostream>
-#include <atomic>
+#include "TaskNode.h"
 
 #include "hclib_cpp.h"
 
 namespace hclib {
 namespace transitivejoins {
-
-// Forward declarations
-struct TaskNode;
+// Forward declaration
 struct TJFutureBase;
-void verifyFutureAwaitFor(TJFutureBase* dependencyFuture);
-
-//////////////////////////////////////////////////////////////////////////////
-// TJFuture Declarations
-// For wrapping Hclib futures only
-//////////////////////////////////////////////////////////////////////////////
+void verifyFutureWaitFor(TJFutureBase* dependencyFuture);
 
 struct TJFutureBase {
-    virtual bool fulfilled() = 0;
-    TaskNode* getAssociatedTaskNode() {
-        return ownerTaskNode_;
-    }
-
-protected:
     TJFutureBase(TaskNode* ownerTaskNode) : ownerTaskNode_(ownerTaskNode) {}
-    std::atomic<TaskNode*> ownerTaskNode_;
+    TaskNode* getOwnerTaskNode();
+
+    virtual bool isFulfilled() = 0;
+
+    TaskNode* ownerTaskNode_;
 };
 
-// Specialized for scalar types
 template<typename T>
-struct TJFuture : TJFutureBase {
+struct TJFuture : public TJFutureBase {
     TJFuture(
-        hclib::future_t<T>* hclibFuture,
-        TaskNode* ownerTaskNode
-    ) : TJFutureBase(ownerTaskNode), hclibFuture_(hclibFuture) {}
+        future_t<T>* hclibFuture,
+        TaskNode* ownerTaskNode) : TJFutureBase(ownerTaskNode), hclibFuture_(hclibFuture) {}
 
     T wait() {
-        verifyFutureAwaitFor(this);
-
+        verifyFutureWaitFor(this);
         return hclibFuture_->wait();
     }
 
-    hclib::future_t<T>* getHclibFuture() {
-        return hclibFuture_;
-    }
-
-    bool fulfilled() override {
+    bool isFulfilled() override {
         return hclibFuture_->owner->satisfied;
     }
 
-private:
-    hclib::future_t<T>* hclibFuture_;
+    future_t<T>* getHclibFuture() {
+        return hclibFuture_;
+    }
+
+    future_t<T>* hclibFuture_;
+};
+
+template<>
+struct TJFuture<void> : public TJFutureBase {
+    TJFuture(
+        future_t<void>* hclibFuture,
+        TaskNode* ownerTaskNode) : TJFutureBase(ownerTaskNode), hclibFuture_(hclibFuture) {}
+
+    void wait() {
+        verifyFutureWaitFor(this);
+        hclibFuture_->wait();
+    }
+
+    bool isFulfilled() override {
+        return hclibFuture_->owner->satisfied;
+    }
+
+    future_t<void>* getHclibFuture() {
+        return hclibFuture_;
+    }
+
+    future_t<void>* hclibFuture_;
 };
 
 } // namespace transitivejoins

@@ -3,7 +3,7 @@ include $(HCLIB_ROOT)/include/hclib.mak
 SOURCE_FOLDER=./src
 OBJ_FOLDER=./obj
 
-FLAGS=-std=c++14 -Wall -fPIC -Iinc
+FLAGS=-std=c++11 -Wall -fPIC -Iinc
 
 SRC_OBJ:=$(patsubst $(SOURCE_FOLDER)/%.cpp, %.o, $(wildcard $(SOURCE_FOLDER)/*.cpp))
 TARGETS=$(SRC_OBJ) lib/libhclib_transitive_joins.so

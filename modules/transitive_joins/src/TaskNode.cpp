@@ -15,9 +15,8 @@ TaskNode::TaskNode() {
 
 #ifdef LOG
     nodeID_ = rand();
-    workerThreadID_ = current_ws()->id;
 
-    std::cout << "[" << nodeID_ << "] Root Task created, running on " << workerThreadID_ << std::endl;
+    std::cout << "[" << nodeID_ << "] Root Task created" << std::endl;
 #endif
 }
 
@@ -28,17 +27,16 @@ TaskNode::TaskNode(TaskNode* parentTaskNode) {
 
 #ifdef LOG
     nodeID_ = rand();
-    workerThreadID_ = current_ws()->id;
 
     std::cout << "[" << nodeID_ << "] Task created, parent is " << parentTaskNode_->getNodeID() << std::endl;
-    std::cout << "[" << nodeID_ << "] Sibling order is " << siblingOrder_ << ", running on " << workerThreadID_ << std::endl;
+    std::cout << "[" << nodeID_ << "] Sibling order is " << siblingOrder_ << std::endl;
     std::cout << "[" << nodeID_ << "] Depth is " << depth_ << std::endl;
 #endif
 }
 
 TaskNode::~TaskNode() {
 #ifdef LOG
-    std::cout << "[" << nodeID_ << "] Task deleted on " << workerThreadID_ << " ." << std::endl;
+    std::cout << "[" << nodeID_ << "] Task deleted" << std::endl;
 #endif
 }
 
@@ -104,6 +102,14 @@ void setUpTaskNode(TaskNode* currTaskNode) {
 #ifdef ENABLE_TASK_TREE
     *(hclib_get_curr_task_local()) = currTaskNode;
 #endif // ENABLE_TASK_TREE
+}
+
+TaskNode* generateNewTaskNode() {
+#ifdef ENABLE_TASK_TREE
+    return new TaskNode(getCurrentTaskNode());
+#else
+    return nullptr;
+#endif
 }
 
 } // namespace transitivejoins

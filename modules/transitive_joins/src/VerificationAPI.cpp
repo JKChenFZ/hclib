@@ -75,7 +75,7 @@ bool verifySiblingOrder(TaskNode* initiatorNodePtr, TaskNode* dependencyNodePtr)
 }
 
 bool verifyFutureWaitForImp(TaskNode* initiatorNodePtr, TJFutureBase* dependencyFuture) {
-    TaskNode* dependencyNodePtr = dependencyFuture->getAssociatedTaskNode();
+    TaskNode* dependencyNodePtr = dependencyFuture->getOwnerTaskNode();
 #ifdef LOG
     std::cout << "[Runtime API] A wait-for request has been captured, ";
     std::cout << initiatorNodePtr->getNodeID() << " waits on " << dependencyNodePtr->getNodeID();
@@ -94,7 +94,7 @@ bool verifyFutureWaitForImp(TaskNode* initiatorNodePtr, TJFutureBase* dependency
     auto alignmentResult = alignNodeDepth(initiatorNodePtr, dependencyNodePtr);
 
     // Check to see if future was fulfilled again
-    if (dependencyFuture->fulfilled()) {
+    if (dependencyFuture->isFulfilled()) {
         return true;
     }
 
@@ -270,23 +270,26 @@ void verifyPromiseWaitForImp(TaskNode* initiatorNode, TJPromiseBase* dependencyP
 //////////////////////////////////////////////////////////////////////////////
 // Runtime API Implementation
 //////////////////////////////////////////////////////////////////////////////
-void verifyFutureAwaitFor(TJFutureBase* dependencyFuture) {
+void verifyFutureWaitFor(TJFutureBase* dependencyFuture) {
 #ifdef ENABLE_FUTURE_LCA
     if (dependencyFuture->fulfilled()) {
         return;
     }
     TaskNode* initiatorNode = getCurrentTaskNode();
     bool res = verifyFutureWaitForImp(initiatorNode, dependencyFuture);
-    if (!res) throw std::runtime_error("LCA Verification failed, see log");
+    if (!res) throw std::runtime_error("Future LCA Verification failed, see log");
 #endif // ENABLE_FUTURE_LCA
 }
 
-void verifyFutureAwaitWithLCA(TaskNode* currTaskNode, TJFutureBase* dependencyFuture) {
+void verifyFutureWaitWithLCA(TaskNode* currTaskNode, TJFutureBase* dependencyFuture) {
+#ifdef ENABLE_FUTURE_LCA
     bool res = verifyFutureWaitForImp(currTaskNode, dependencyFuture);
-    if (!res) throw std::runtime_error("LCA Verification failed, see log");
+    if (!res) throw std::runtime_error("Future LCA Verification failed, see log");
+#endif // ENABLE_FUTURE_LCA
 }
 
 void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise) {
+#ifdef ENABLE_PROMISE_LCA
     if (dependencyPromise->isFulfilled()) {
         // If a promise is fulfilled already, it is safe from LCA inspection
         return;
@@ -294,6 +297,7 @@ void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise) {
 
     TaskNode* initiatorNode = getCurrentTaskNode();
     verifyPromiseWaitForImp(initiatorNode, dependencyPromise);
+#endif // ENABLE_PROMISE_LCA
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -323,7 +327,7 @@ TJPromiseFulfillmentScopeGuard::~TJPromiseFulfillmentScopeGuard() noexcept(false
 #ifdef LOG
     std::cout << "[Runtime API] All owned TJPromises are fulfilled in node ";
     std::cout << currentScopeTaskNode_->getNodeID() << std::endl;
-#endif
+#endif // LOG
 
 #endif // ENABLE_PROMISE_FULFILLMENT_CHECK
 }
