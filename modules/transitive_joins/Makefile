@@ -11,6 +11,15 @@ TARGETS=$(SRC_OBJ) lib/libhclib_transitive_joins.so
 all: FLAGS += -O3
 all: $(TARGETS)
 
+test: FLAGS += -g -O0 -DLOG -DENABLE_TASK_TREE -DENABLE_FUTURE_LCA -DENABLE_PROMISE_LCA -DENABLE_PROMISE_FULFILLMENT_CHECK
+test: $(TARGETS)
+
+withTaskNodes: FLAGS += -O3 -DENABLE_TASK_TREE
+withTaskNodes: $(TARGETS)
+
+withLCA: FLAGS += -O3 -DENABLE_TASK_TREE -DENABLE_FUTURE_LCA -DENABLE_PROMISE_LCA
+withLCA: $(TARGETS)
+
 lib/libhclib_transitive_joins.so: $(SRC_OBJ)
 	$(CXX) -shared -fPIC $(HCLIB_LDLIBS) $(HCLIB_LDFLAGS) -o $@ $(OBJ_FOLDER)/*.o
 

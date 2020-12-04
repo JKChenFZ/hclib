@@ -7,6 +7,10 @@ TaskNode* TJPromiseBase::getOwnerTaskNode() {
     return ownerTaskNode_; 
 }
 
+void TJPromiseBase::setNewOwnerTaskNode(TaskNode* newOwnerTaskNode) {
+    ownerTaskNode_ = newOwnerTaskNode;
+}
+
 void TJPromiseBase::addDependencyNode(TaskNode* newDependencyNode) {
 #ifdef ENABLE_PROMISE_LCA
     std::lock_guard<std::mutex> lock(dependencyNodesLock);

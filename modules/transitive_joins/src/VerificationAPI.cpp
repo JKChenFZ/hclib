@@ -44,15 +44,16 @@ bool verifySiblingOrder(TaskNode* initiatorNodePtr, TaskNode* dependencyNodePtr)
     TaskNode* dependencyNodePrePtr = nullptr;
 
     while (initiatorNodePtr != dependencyNodePtr) {
-        // Remember previous level
+        // Remember the previous level as we climb up
         initiatorNodePrePtr = initiatorNodePtr;
         dependencyNodePrePtr = dependencyNodePtr;
 
-        // Advance into next level
+        // Advance into next level (parents)
         initiatorNodePtr = initiatorNodePtr->getParentNode();
         dependencyNodePtr = dependencyNodePtr->getParentNode();
     }
 
+    // For futures, only younger ones can wait on older ones
     if (initiatorNodePrePtr->getSiblingOrder() > dependencyNodePrePtr->getSiblingOrder()) {
 #ifdef LOG
         std::cout << "[Runtime API] Valid wait for relationship detected" << std::endl;
@@ -107,14 +108,14 @@ bool verifyFutureWaitForImp(TaskNode* initiatorNodePtr, TJFutureBase* dependency
     if (alignedInitiatorNodePtr == alignedDependencyNodePtr) {
         if (initiatorNodePtr->getDepth() < dependencyNodePtr->getDepth()) {
             // Initialtor node is an ancester of the dependency node
-            // this relationship is always valid for wait for
+            // this relationship is always a valid for-wait
 #ifdef LOG
             std::cout << "[Runtime API] Verifier detected a parent waits on child relationship" << std::endl;
 #endif
             return true;
         } else {
-            // Initialtor node is a child of the initior node
-            // this relationship is always valid for wait for
+            // Initiator node is a child of the dependency node
+            // this relationship is always invalid
 #ifdef LOG
             std::cout << "[Runtime API] Verifier detected a child waits on parent relationship" << std::endl;
 #endif
@@ -123,7 +124,7 @@ bool verifyFutureWaitForImp(TaskNode* initiatorNodePtr, TJFutureBase* dependency
     }
 
     // Both node exist on different Task node subtrees
-    // need to run LCA algorithm to verify relationship
+    // Validate by comparing the sibling order
     return verifySiblingOrder(alignedInitiatorNodePtr, alignedDependencyNodePtr);
 }
 
@@ -207,7 +208,7 @@ void lesserNodeWaitingOnGreaterNode(
 void verifyPromiseWaitForImp(TaskNode* initiatorNode, TJPromiseBase* dependencyPromise) {
     TaskNode* dependencyNode = dependencyPromise->getOwnerTaskNode();
     // Find the LCA reps
-    // Remember the previous pointers
+    // Remember the previous pointers, as we climb up
     TaskNode* initiatorNodePrePtr = initiatorNode;
     TaskNode* dependencyNodePrePtr = dependencyNode;
 
@@ -256,7 +257,7 @@ void verifyPromiseWaitForImp(TaskNode* initiatorNode, TJPromiseBase* dependencyP
     //
     // Older children are tagged with lower sibling order, where newer ones are
     // tagged with higher sibling order, however, in algorithm, we use the traversal
-    // order where we visit parent, newer children to order, lowest to highest.
+    // order where we visit parent, newer children to older children, lowest to highest.
     // Thus, lower sibling order has higher priority.
     if (initiatorNodePrePtr->getSiblingOrder() < dependencyNodePrePtr->getSiblingOrder()) {
         greaterNodeWaitingOnLesserNode(initiatorNodePrePtr, dependencyNodePrePtr, dependencyPromise);
@@ -272,7 +273,7 @@ void verifyPromiseWaitForImp(TaskNode* initiatorNode, TJPromiseBase* dependencyP
 //////////////////////////////////////////////////////////////////////////////
 void verifyFutureWaitFor(TJFutureBase* dependencyFuture) {
 #ifdef ENABLE_FUTURE_LCA
-    if (dependencyFuture->fulfilled()) {
+    if (dependencyFuture->isFulfilled()) {
         return;
     }
     TaskNode* initiatorNode = getCurrentTaskNode();
@@ -298,6 +299,21 @@ void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise) {
     TaskNode* initiatorNode = getCurrentTaskNode();
     verifyPromiseWaitForImp(initiatorNode, dependencyPromise);
 #endif // ENABLE_PROMISE_LCA
+}
+
+void transferPromiseOwnership(TJPromiseBase* promiseToTransfer, TaskNode* newTaskNode) {
+    auto currentNode = getCurrentTaskNode();
+    if (!newTaskNode || !currentNode) {
+        return;
+    }
+
+    if (promiseToTransfer->getOwnerTaskNode() != currentNode) {
+        throw std::runtime_error("Current TaskNode does not own this promise");
+    }
+
+    promiseToTransfer->getOwnerTaskNode()->removeTJPromise(promiseToTransfer);
+    promiseToTransfer->setNewOwnerTaskNode(newTaskNode);
+    newTaskNode->addNewTJPromise(promiseToTransfer);
 }
 
 //////////////////////////////////////////////////////////////////////////////

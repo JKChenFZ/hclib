@@ -41,7 +41,7 @@ void async(T&& lambda) {
 template <typename T, typename U>
 void async_await(T&& lambda, TJFuture<U>* tjFuture) {
     TaskNode* newTaskNode = generateNewTaskNode();
-    verifyFutureAwaitWithLCA(newTaskNode, tjFuture);
+    verifyFutureWaitWithLCA(newTaskNode, tjFuture);
 
     hclib::async_await(
         inlineUserVoidLambdaSetUp(lambda, newTaskNode),
@@ -71,7 +71,7 @@ auto async_future_await(
     TJFuture<U>* tjFuture
 ) -> TJFuture<decltype(lambda())>* {
     TaskNode* newTaskNode = generateNewTaskNode();
-    verifyFutureAwaitWithLCA(newTaskNode, tjFuture);
+    verifyFutureWaitWithLCA(newTaskNode, tjFuture);
 
     auto hclibFuture = hclib::async_future_await(
         inlineUserLambdaSetUp(lambda, newTaskNode),
@@ -87,8 +87,8 @@ auto async_future_await(
 }
 
 // APIs extended to accomendate transfer in promise ownership
-template <typename T, typename U>
-void async(std::vector<TJPromise<T>*> promisesToTransfer, U&& lambda) {
+template <typename U>
+void async(const std::vector<TJPromiseBase*>& promisesToTransfer, U&& lambda) {
     TaskNode* newTaskNode = generateNewTaskNode();
 
     for (auto promise : promisesToTransfer) {

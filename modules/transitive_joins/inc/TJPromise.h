@@ -37,6 +37,7 @@ struct TJPromiseBase {
     TJPromiseBase(TaskNode* ownerTaskNode) : ownerTaskNode_(ownerTaskNode) {}
 
     TaskNode* getOwnerTaskNode();
+    void setNewOwnerTaskNode(TaskNode* ownerTaskNode);
     void addDependencyNode(TaskNode* newDependencyNode);
     void signalAllDependencyNodes();
 

@@ -27,27 +27,13 @@ void verifyFutureWaitFor(TJFutureBase* dependencyFuture);
  * 
  * Invoked through implicit wait-for using async_await
  */
-void verifyFutureAwaitWithLCA(TaskNode* currTaskNode, TJFutureBase* dependencyFuture);
+void verifyFutureWaitWithLCA(TaskNode* currTaskNode, TJFutureBase* dependencyFuture);
 
 /*
  * Transfers the ownership ("ownerTaskNode") from current node to the given
  * "newTaskNode"
  */
-template <typename T>
-void transferPromiseOwnership(TJPromise<T>* promiseToTransfer, TaskNode* newTaskNode) {
-    auto currentNode = getCurrentTaskNode();
-    if (!newTaskNode || !currentNode) {
-        return;
-    }
-
-    if (promiseToTransfer->getOwnerTaskNode() != currentNode) {
-        throw std::runtime_error("Current TaskNode does not own this promise");
-    }
-
-    promiseToTransfer->getOwnerTaskNode()->removeTJPromise(promiseToTransfer);
-    promiseToTransfer->setNewOwner(newTaskNode);
-    newTaskNode->addNewTJPromise(promiseToTransfer);
-}
+void transferPromiseOwnership(TJPromiseBase* promiseToTransfer, TaskNode* newTaskNode);
 
 /*
  * A scope guard to check whether owned promises of each task

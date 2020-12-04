@@ -1,4 +1,4 @@
-#include "AsyncAPI.h"
+#include "TJAsyncAPI.h"
 #include "TJPromise.h"
 
 #include <iostream>
@@ -10,6 +10,7 @@ int main(int argc, char * argv[]) {
     hclib::launch(deps, 2, [=] {
         auto promise = tj::getNewTJPromise<int>();
         promise->put(1);
-        std::cout << "Worked " << promise->get_future()->get() << std::endl;
+        assert(promise->get_future()->get() == 1 && "Incorrect promise value");
+        std::cout << "Pass Test" << std::endl;
     });
 }
