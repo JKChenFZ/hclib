@@ -99,5 +99,27 @@ void async(const std::vector<TJPromiseBase*>& promisesToTransfer, U&& lambda) {
     hclib::async(inlineUserVoidLambdaSetUp(lambda, newTaskNode));
 }
 
+// APIs extended to accomendate transfer in promise ownership
+template <typename T>
+auto async_future(const std::vector<TJPromiseBase*>& promisesToTransfer, T&& lambda) -> TJFuture<decltype(lambda())>* {
+    TaskNode* newTaskNode = generateNewTaskNode();
+
+    for (auto promise : promisesToTransfer) {
+        // Change in ownership logic
+        transferPromiseOwnership(promise, newTaskNode);
+    }
+
+    auto hclibFuture = hclib::async_future(
+        inlineUserLambdaSetUp(lambda, newTaskNode)
+    );
+
+    auto tjFuture = new TJFuture<decltype(lambda())>(
+        hclibFuture,
+        newTaskNode
+    );
+
+    return tjFuture;
+}
+
 } // namespace transitivejoins
 } // namespace hclib

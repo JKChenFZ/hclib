@@ -13,14 +13,11 @@ skipped=0;
 
 # Output of passed tests
 groundTruth="Pass Test";
-# Output to look for in unfulfilled TJPromises
+# Name of the fulfillment failure test
 fulfillmentTestName="FulfillmentFail";
 # Disabled Test Name Prefix
 disabledTestNamePrefix="DisabledTest";
-# Promise LCA Failure Test name suffix
-promiseLCAFailureTestSuffix="LCAWillThrow";
 # Error messages
-promiseLCAError="Promise LCA Verification failed";
 fulfillmentError="A TJPromise is not fulfilled in this task";
 
 failedTests=()
@@ -43,14 +40,6 @@ do
     if [[ "$testOutput" = *"$groundTruth"* ]]; then
         ((pass += 1));
     else
-        if [[ "$test" = *"$promiseLCAFailureTestSuffix"* ]]; then
-            # If the test is related to TJPromise LCA failure, check for failure message
-            if [[ "$testOutput" = *"$promiseLCAError"* ]]; then
-                ((pass += 1));
-                continue;
-            fi
-        fi
-
         if [[ "$test" = *"$fulfillmentTestName"* ]]; then
             # If the test is related to TJPromise fulfillment failure, check for fulfillment assert failure too
             if [[ "$testOutput" = *"$fulfillmentError"* ]]; then
