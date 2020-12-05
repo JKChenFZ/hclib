@@ -146,16 +146,10 @@ void greaterNodeWaitingOnLesserNode(
         // if already fulfilled, we skip
         return;
     }
-#ifdef LOG
-    std::cout << "[PromiseLCA] Found a greater to lesser wait-for" << std::endl;
-#endif
 
+    // Atomic fetch and add returns the previous value
     if (std::atomic_fetch_add(&(initiatorNodePtr->edgeCount), 1) < 0) {
         // Concave turn detected, throw error
-#ifdef LOG
-        std::cout << "Promise LCA Verification failed, here is what we know" << std::endl;
-        std::cout << "-- while greater node waits on lesser node TODO" << std::endl;
-#endif
         throw std::runtime_error("LCA Verification failed, see log");
     } else {
         dependencyPromise->addDependencyNode(initiatorNodePtr);
@@ -179,20 +173,14 @@ void lesserNodeWaitingOnGreaterNode(
     // The greated node (depedencyNodePtr) will remember itself.
     // On fulfillment of the dependencyPromise, greater node will come back
     // and increment its own count
-#ifdef LOG
-        std::cout << "[PromiseLCA] Found a lesser to greater wait-for" << std::endl;
-#endif
     if (dependencyPromise->isFulfilled()) {
         // if already fulfilled, we skip
         return;
     }
 
+    // Atomic fetch and sub returns the previous value
     if (std::atomic_fetch_sub(&(depedencyNodePtr->edgeCount), 1) > 0) {
         // Concave turn detected, throw error
-#ifdef LOG
-        std::cout << "Promise LCA Verification failed, here is what we know" << std::endl;
-        std::cout << "-- while lesser node waits on greater node TODO" << std::endl;
-#endif
         throw std::runtime_error("LCA Verification failed, see log");
     } else {
         dependencyPromise->addDependencyNode(depedencyNodePtr);
@@ -228,7 +216,8 @@ void verifyPromiseWaitForImp(TaskNode* initiatorNode, TJPromiseBase* dependencyP
 
     if (initiatorNodeCurrPtr == dependencyNodeCurrPtr) {
 #ifdef LOG
-        std::cout << "[PromiseLCA] found parent child wait-for" << std::endl;
+        std::cout << "[PromiseLCA] Found parent child wait-for";
+        std::cout << " " << initiatorNode->getNodeID() << " waits on " << dependencyNode->getNodeID() << std::endl;
 #endif
         if (initiatorNodeCurrPtr == initiatorNodePrePtr) {
             // initiator node did not move, implies that it is the parent node
@@ -260,8 +249,16 @@ void verifyPromiseWaitForImp(TaskNode* initiatorNode, TJPromiseBase* dependencyP
     // order where we visit parent, newer children to older children, lowest to highest.
     // Thus, lower sibling order has higher priority.
     if (initiatorNodePrePtr->getSiblingOrder() < dependencyNodePrePtr->getSiblingOrder()) {
+#ifdef LOG
+    std::cout << "[PromiseLCA] Found a greater to lesser wait-for";
+    std::cout << " " << initiatorNode->getNodeID() << " waits on " << dependencyNode->getNodeID() << std::endl;
+#endif
         greaterNodeWaitingOnLesserNode(initiatorNodePrePtr, dependencyNodePrePtr, dependencyPromise);
     } else {
+#ifdef LOG
+        std::cout << "[PromiseLCA] Found a lesser to greater wait-for";
+        std::cout << " " << initiatorNode->getNodeID() << " waits on " << dependencyNode->getNodeID() << std::endl;
+#endif
         lesserNodeWaitingOnGreaterNode(initiatorNodePrePtr, dependencyNodePrePtr, dependencyPromise);
     }
 }
