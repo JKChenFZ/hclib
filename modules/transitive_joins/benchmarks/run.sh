@@ -41,6 +41,13 @@ if [ "$BENCHMARK" == "2" ]; then
 
         echo "./${EXECUTABLE_NAME}.out"
         ./${EXECUTABLE_NAME}.out
+else
+if [ "$BENCHMARK" == "3" ]; then
+        EXECUTABLE_NAME=CellSmithwatermanFutureLCA
+
+        echo "./${EXECUTABLE_NAME}.out"
+        ./${EXECUTABLE_NAME}.out
+fi
 fi
 fi
 
