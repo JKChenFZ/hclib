@@ -1,9 +1,13 @@
 if [ $# -ne 3 ]; then
-	echo "USAGE: ./run.sh <BENCHMARK> <NUM_WORKERS> <WORKLOAD>"
-	echo "BENCHMARK= 1"
-    echo "1. Tile Smithwaterman with Promise LCA"
+    echo "USAGE: ./run.sh <BENCHMARK> <NUM_WORKERS> <WORKLOAD>"
     echo "WORKLOAD=large, huge"
-	exit
+    echo "BENCHMARK= 1 .... 5"
+    echo "1. Tile Smithwaterman with Promise LCA [Workloads are in the 'input' folder]"
+    echo "2. Cell Smithwaterman with Promise LCA [Workload is hardcoded to 'inputA' and inputB'"
+    echo "3. Cell Smithwaterman with Future LCA [Workload is hardcoded to 'inputA' and inputB'"
+    echo "4. Mergesort With Future LCA [large=2000000, huge=200,000,000]"
+    echo "5. Mergesort With Promise LCA [large=2000000, huge=200,000,000]"
+    exit
 fi
 
 BENCHMARK=$1
@@ -20,6 +24,8 @@ if [ "$SIZE" == "large" ]; then
         INNER_TILE_WIDTH=232
         INNER_TILE_HEIGHT=240
         EXPECTED_RESULT=36472
+
+        NUMBERS=2000000
 else
 if [ "$SIZE" == "huge" ]; then
         TILE_WIDTH=256
@@ -27,6 +33,8 @@ if [ "$SIZE" == "huge" ]; then
         INNER_TILE_WIDTH=725
         INNER_TILE_HEIGHT=750
         EXPECTED_RESULT=364792
+
+        NUMBERS=200000000
 fi
 fi
 
@@ -47,6 +55,20 @@ if [ "$BENCHMARK" == "3" ]; then
 
         echo "./${EXECUTABLE_NAME}.out"
         ./${EXECUTABLE_NAME}.out
+else
+if [ "$BENCHMARK" == "4" ]; then
+        EXECUTABLE_NAME=MergesortFutureLCA
+
+        echo "./${EXECUTABLE_NAME}.out ${NUMBERS}"
+        ./${EXECUTABLE_NAME}.out ${NUMBERS}
+else
+if [ "$BENCHMARK" == "5" ]; then
+        EXECUTABLE_NAME=MergesortPromiseLCA
+
+        echo "./${EXECUTABLE_NAME}.out ${NUMBERS}"
+        ./${EXECUTABLE_NAME}.out ${NUMBERS}
+fi
+fi
 fi
 fi
 fi

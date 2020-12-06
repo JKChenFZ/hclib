@@ -6,6 +6,9 @@
 
 namespace hclib {
 namespace transitivejoins {
+// Forward declaration
+void bumpTaskNodeCount();
+
 //////////////////////////////////////////////////////////////////////////////
 // TaskNode Class Implementation
 //////////////////////////////////////////////////////////////////////////////
@@ -106,6 +109,7 @@ void setUpTaskNode(TaskNode* currTaskNode) {
 
 TaskNode* generateNewTaskNode() {
 #ifdef ENABLE_TASK_TREE
+    bumpTaskNodeCount();
     return new TaskNode(getCurrentTaskNode());
 #else
     return nullptr;

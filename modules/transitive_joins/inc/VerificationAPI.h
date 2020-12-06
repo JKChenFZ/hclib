@@ -51,5 +51,13 @@ private:
     TaskNode* currentScopeTaskNode_;
 };
 
+/*
+ * Stats APIs
+ */
+void bumpTaskNodeCount();
+void bumpFutureLCACount();
+void bumpPromiseLCACount();
+void printStats();
+
 } // namespace transitivejoins
 } // namespace hclib

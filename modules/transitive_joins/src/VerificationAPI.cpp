@@ -1,6 +1,7 @@
 #include "VerificationAPI.h"
 
 #include <assert.h>
+#include <atomic>
 #include <cstdint>
 #include <iostream>
 #include <mutex>
@@ -11,6 +12,10 @@
 namespace hclib {
 namespace transitivejoins {
 namespace {
+
+static std::atomic<size_t> numNodes {0};
+static std::atomic<size_t> numFutureLCA {0};
+static std::atomic<size_t> numPromiseLCA {0};
 
 std::tuple<TaskNode*, TaskNode*> alignNodeDepth(
     TaskNode* initiatorNodePtr,
@@ -273,6 +278,7 @@ void verifyFutureWaitFor(TJFutureBase* dependencyFuture) {
     if (dependencyFuture->isFulfilled()) {
         return;
     }
+    bumpFutureLCACount();
     TaskNode* initiatorNode = getCurrentTaskNode();
     bool res = verifyFutureWaitForImp(initiatorNode, dependencyFuture);
     if (!res) throw std::runtime_error("Future LCA Verification failed, see log");
@@ -281,6 +287,10 @@ void verifyFutureWaitFor(TJFutureBase* dependencyFuture) {
 
 void verifyFutureWaitWithLCA(TaskNode* currTaskNode, TJFutureBase* dependencyFuture) {
 #ifdef ENABLE_FUTURE_LCA
+    if (dependencyFuture->isFulfilled()) {
+        return;
+    }
+    bumpFutureLCACount();
     bool res = verifyFutureWaitForImp(currTaskNode, dependencyFuture);
     if (!res) throw std::runtime_error("Future LCA Verification failed, see log");
 #endif // ENABLE_FUTURE_LCA
@@ -292,7 +302,7 @@ void verifyPromiseWaitFor(TJPromiseBase* dependencyPromise) {
         // If a promise is fulfilled already, it is safe from LCA inspection
         return;
     }
-
+    bumpPromiseLCACount();
     TaskNode* initiatorNode = getCurrentTaskNode();
     verifyPromiseWaitForImp(initiatorNode, dependencyPromise);
 #endif // ENABLE_PROMISE_LCA
@@ -343,6 +353,27 @@ TJPromiseFulfillmentScopeGuard::~TJPromiseFulfillmentScopeGuard() noexcept(false
 #endif // LOG
 
 #endif // ENABLE_PROMISE_FULFILLMENT_CHECK
+}
+
+/*
+ * Stats API Implementation
+ */
+void bumpTaskNodeCount() {
+    numNodes++;
+}
+
+void bumpFutureLCACount() {
+    numFutureLCA++;
+}
+
+void bumpPromiseLCACount() {
+    numPromiseLCA++;
+}
+
+void printStats() {
+    std::cout << "[Transitive Joins] Task Nodes Created " << numNodes << std::endl;
+    std::cout << "[Transitive Joins] Future LCA Invoked " << numFutureLCA << std::endl;
+    std::cout << "[Transitive Joins] Promise LCA Invoked " << numPromiseLCA << std::endl;
 }
 
 } // namespace transitivejoins
